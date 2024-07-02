@@ -1,18 +1,18 @@
 import {useState, useEffect} from "react";
 import {ethers} from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
+import storage_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
-  const [atm, setATM] = useState(undefined);
-  const [balance, setBalance] = useState(undefined);
-  const [amount, setAmount] = useState(0);  // New state for the amount
-  const [multiplierAmt, setMultiplierAmt] = useState(1);  // New state for the multiplier
+  const [storage, setStorage] = useState(undefined);
 
+	const [storeValue, setStoreValue] = useState(undefined);
+  const [fetchedValue, setFetchedValue] = useState(undefined);
+	const [storeHistory, setStoreHistory] = useState([]);
 
   const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const atmABI = atm_abi.abi;
+  const storageABI = storage_abi.abi;
 
   const getWallet = async() => {
     if (window.ethereum) {
@@ -45,54 +45,46 @@ export default function HomePage() {
     handleAccount(accounts);
     
     // once wallet is set we can get a reference to our deployed contract
-    getATMContract();
+    getStorageContract();
   };
 
-  const getATMContract = () => {
+  const getStorageContract = () => {
     const provider = new ethers.providers.Web3Provider(ethWallet);
     const signer = provider.getSigner();
-    const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
+    const storageContract = new ethers.Contract(contractAddress, storageABI, signer);
  
-    setATM(atmContract);
+    setStorage(storageContract);
   }
 
-  const getBalance = async() => {
-    if (atm) {
-      setBalance((await atm.getBalance()).toNumber());
+	////////////////////////////////////////////////////////////////////////////
+
+	const setStoredValueFn = async () => {
+    if (storage) {
+      let tx = await storage.setStoredValue(storeValue);
+      await tx.wait()
+    }
+	}
+
+	const getStoredValueFn = async () => {
+		if (storage) {
+      setFetchedValue((await storage.getStoredValue()).toNumber());
+    }
+	}
+
+	const getStoreHistoryFn = async () => {
+    if (storage) {
+      const storeHistoryBN = await storage.getStoreHistory();
+      const storeHistoryArray = storeHistoryBN.map(value => value.toNumber());
+      setStoreHistory(storeHistoryArray);
     }
   }
 
-  const deposit = async () => {
-    if (atm) {
-      let tx = await atm.deposit(amount);
-      await tx.wait();
-      getBalance();
-      setAmount("");  // Reset the input value after the transaction
-    }
-  };
-
-  const withdraw = async () => {
-    if (atm) {
-      let tx = await atm.withdraw(amount);
-      await tx.wait();
-      getBalance();
-      setAmount("");  // Reset the input value after the transaction
-    }
-  };
-
-  const multiplier = async () => {
-    if (atm) {
-      let tx = await atm.balanceMultiplier(multiplierAmt);
-      await tx.wait();
-      getBalance();
-      setAmount("");  // Reset the input value after the transaction
-    }
-  };
+	////////////////////////////////////////////////////////////////////////////
 
   const initUser = () => {
     // Check to see if user has Metamask
     if (!ethWallet) {
-      return <p>Please install Metamask in order to use this ATM.</p>
+      return <p>Please install Metamask in order to use this EBS.</p>
     }
 
     // Check to see if user is connected. If not, connect to their account
@@ -100,32 +92,29 @@ export default function HomePage() {
       return <button onClick={connectAccount}>Please connect your Metamask wallet</button>
     }
 
-    if (balance == undefined) {
-      getBalance();
-    }
-
     return (
-      <div>
-        <p>Your Account: {account}</p>
-        <p>Your Balance: {balance}</p>
-        <input
-          type="number"
-          placeholder="Enter amount in ETH"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
-        <button onClick={deposit}>Deposit ETH</button>
-        <button onClick={withdraw}>Withdraw ETH</button>
-        <br/>
-
-        <input
-          type="number"
-          placeholder="Enter multiplier"
-          value={multiplierAmt}
-          onChange={(e) => setMultiplierAmt(e.target.value)}
-        />
-        <button onClick={multiplier}>Multiply Balance</button>
-      </div>
+			<>
+				<p>
+					<span>Set a value on this basic storage: </span>
+					<input
+							type="number"
+							placeholder="Enter value to store"
+							value={storeValue}
+							onChange={(e) => setStoreValue(e.target.value)}
+						/>
+					<button onClick={setStoredValueFn}>Store Value</button>
+				</p>
+				<p>
+					<span>Get the currently stored value on this basic storage: </span>
+					<button onClick={getStoredValueFn}>Get Stored Value</button>
+					<p>Currently Stored Value: {fetchedValue}</p>
+				</p>
+				<p>
+					<span>Get the history of values stored on this basic storage: </span>
+					<button onClick={getStoreHistoryFn}>Get History of Stored Values</button>
+          <p>Store History: {storeHistory.join(", ")}</p>
+				</p>
+			</>
     )
   }
 
@@ -133,8 +122,9 @@ export default function HomePage() {
 
   return (
     <main className="container">
-      <header><h1>Welcome to the Metacrafters ATM!</h1></header>
-      {initUser()}
+      <header><h1>This is my Simple Basic Storage (SBS)!</h1></header>
+      { initUser() }
+
       <style jsx>{`
         .container {
           text-align: center
