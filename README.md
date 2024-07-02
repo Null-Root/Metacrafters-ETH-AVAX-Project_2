@@ -1,8 +1,8 @@
-# Project
-This is a project which contains a frontend component called "Metacrafters ATM"
+# Simple Basic Storage
+This is a project which contains a frontend component and this is about storage.
 
 ## Description
-This project has a frontend interface in which one can first connect their wallet, choose an account to connect on their wallet, then perform either deposit, withdraw, or multiply their balance by a specific multiplier.
+This project has a frontend interface in which one can first connect their wallet, choose an account to connect on their wallet, then perform setting a value in the storage, getting the current value from the storage, lastly, it has a history wherein one can see past values of the storage
 
 
 ## Getting Started
